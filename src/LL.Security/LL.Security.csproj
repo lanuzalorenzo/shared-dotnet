@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>LL.Security</PackageId>
+    <Description>Controles de seguridad reutilizables para APIs ASP.NET Core: cabeceras, CORS denegado por defecto, validación JWT endurecida y límite por IP.</Description>
+    <PackageTags>aspnetcore;security;cors;jwt;rate-limiting</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: lanuzalorenzo/core/.github/workflows/dotnet.yml@v1
+    with:
+      solution: SharedDotnet.sln

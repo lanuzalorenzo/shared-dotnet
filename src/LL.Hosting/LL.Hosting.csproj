@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>LL.Hosting</PackageId>
+    <Description>Base de alojamiento para APIs ASP.NET Core: ProblemDetails, redirección a HTTPS con HSTS condicionado al entorno y endpoint de salud anónimo.</Description>
+    <PackageTags>aspnetcore;hosting;problem-details;health-checks;hsts</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,19 @@
+# .NET
+bin/
+obj/
+TestResults/
+*.user
+*.suo
+
+# Paquetes
+*.nupkg
+*.snupkg
+.nupkg/
+
+# Editores
+.idea/
+.vscode/
+*.swp
+
+# Sistema
+.DS_Store

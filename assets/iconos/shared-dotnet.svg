@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>shared-dotnet</title>
+  <desc>Identidad visual: navy con degradado, borde cian y glifo blanco.</desc>
+  <defs>
+    <linearGradient id="bg-shared-dotnet" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#07131e"/>
+      <stop offset="100%" stop-color="#0e2a47"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bg-shared-dotnet)"/>
+  <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#38bdf8" stroke-width="2"/>
+  <g transform="translate(10 10) scale(1.83334)" fill="#f8fafc">
+    <path d="M12 0 L24 3.333 L12 6.667 L0 3.333 Z"/>
+    <path d="M12 8.667 L24 12 L12 15.333 L0 12 Z"/>
+    <path d="M12 17.333 L24 20.667 L12 24 L0 20.667 Z"/>
+  </g>
+</svg>
