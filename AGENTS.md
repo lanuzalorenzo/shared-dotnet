@@ -13,6 +13,8 @@ Paquetes NuGet con los controles que comparten las APIs del portfolio. Este repo
 ## Reglas
 
 - Sin secretos, credenciales ni datos personales. Los ejemplos usan valores ficticios.
+- La auditoría de dependencias falla la compilación ante cualquier vulnerabilidad conocida: `NuGetAudit` en modo `all` y `NU1901`–`NU1904` como errores.
+- Dependabot mantiene NuGet y GitHub Actions; una actualización de parche o menor se fusiona sola si el pipeline pasa.
 - Sin configuración de un consumidor concreto dentro de un paquete: todo entra por opciones y se valida en el registro.
 - Un control nuevo entra con su prueba. Un paquete que no puede probar lo que promete no se publica.
 - Las comprobaciones de seguridad no se relajan para que una prueba pase. Si una prueba no puede ejercer el comportamiento, se cambia la prueba.
@@ -26,9 +28,10 @@ dotnet restore SharedDotnet.sln
 dotnet build SharedDotnet.sln -c Release --no-restore
 dotnet test SharedDotnet.sln -c Release --no-build --no-restore
 dotnet format SharedDotnet.sln --verify-no-changes --no-restore
+gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-El CI llama al workflow `dotnet.yml` de `lanuzalorenzo/core`. Un cambio está listo cuando el pipeline pasa en verde y los cuatro comandos anteriores no fallan.
+El CI llama al workflow `dotnet.yml` de `lanuzalorenzo/core` y escanea secretos con Gitleaks sobre el historial completo. El hook local se instala con `scripts/install-git-hooks.sh` y se comprueba con `--check`; es un aviso temprano, no sustituye al CI. Un cambio está listo cuando el pipeline pasa en verde y los comandos anteriores no fallan.
 
 ## Versionado y publicación
 

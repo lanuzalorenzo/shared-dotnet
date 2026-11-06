@@ -4,7 +4,7 @@
 
 Dos paquetes NuGet con los controles que repiten todas las APIs de este portfolio: cabeceras de seguridad, CORS cerrado por defecto, validación de tokens, límite por IP, ProblemDetails, HTTPS con HSTS y endpoint de salud. La lógica vive aquí una vez; cada API la instala y la fija por versión.
 
-> **Estado (2026-11-06).** Paquetes `0.1.0` publicados en GitHub Packages con los tags `security/v0.1.0` y `hosting/v0.1.0`. `EcommerceApi` los consume desde el feed con `packages: read` y los siete checks del pipeline en verde.
+> **Estado (2026-11-06).** Paquetes `0.1.0` publicados en GitHub Packages con los tags `security/v0.1.0` y `hosting/v0.1.0`. `EcommerceApi` los consume desde el feed con `packages: read` y los checks del pipeline en verde.
 
 Un control que vive en un documento depende de que cada equipo lo lea y lo copie bien. Uno que vive en un paquete se instala, se versiona y se audita una sola vez. Con un servicio la diferencia es pequeña; con veinte, es la diferencia entre revisar veinte copias a mano y revisar el original.
 
