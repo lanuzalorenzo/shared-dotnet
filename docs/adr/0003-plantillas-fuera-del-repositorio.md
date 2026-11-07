@@ -1,6 +1,6 @@
 # 0003 — Las plantillas no viven aquí
 
-- Estado: propuesto
+- Estado: aceptado
 - Fecha: 2026-11-06
 
 ## Contexto
@@ -25,4 +25,4 @@ Motivos:
 - Las plantillas consumen este repositorio y `core` por versión publicada, nunca por ruta: `dotnet add package` y `uses: …@vX.Y`.
 - Cambiar una plantilla no obliga a versionar ni publicar un paquete de controles, y al revés.
 - Se rechaza publicarlas como paquetes `LL.*` aquí: unifica el feed a costa de mezclar dos ciclos y de romper el alcance de ADR-0001.
-- Queda pendiente el nombre del paquete de plantillas y si son tres plantillas o una con opciones. Se decide al crearlas, no aquí.
+- Se crean tres plantillas separadas —`ll-api`, `ll-blazor` y `ll-nuget`— y las plantillas no se publican como paquete: cada una se instala con `dotnet new install` desde su carpeta.
