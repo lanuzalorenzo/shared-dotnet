@@ -79,12 +79,14 @@ El consumidor añade el feed y las credenciales en su `nuget.config`:
 <packageSourceCredentials>
   <github>
     <add key="Username" value="%GITHUB_ACTOR%" />
-    <add key="ClearTextPassword" value="%GITHUB_TOKEN%" />
+    <add key="ClearTextPassword" value="%GH_PACKAGES_TOKEN%" />
   </github>
 </packageSourceCredentials>
 ```
 
-GitHub Packages exige autenticación incluso para leer paquetes públicos. Si algún día el paquete debe instalarse sin credenciales, el destino es nuget.org, con el prefijo reservado y una decisión escrita.
+GitHub Packages exige autenticación incluso para leer paquetes públicos. El consumidor exporta el PAT como `GH_PACKAGES_TOKEN`, no como `GITHUB_TOKEN`: `gh` y Git leen esta última como la credencial de la sesión y un token sin `repo` deja los `push` en `403`. En CI, `secrets.GITHUB_TOKEN` se mapea a `GH_PACKAGES_TOKEN` en el job que restaura.
+
+Si algún día el paquete debe instalarse sin credenciales, el destino es nuget.org, con el prefijo reservado y una decisión escrita.
 
 ## Verificación
 
