@@ -69,4 +69,39 @@ public sealed class SecurityHeadersTests
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         Assert.Equal("nosniff", response.Headers.GetValues("X-Content-Type-Options").Single());
     }
+
+    [Fact]
+    public async Task Does_not_publish_the_server_header_when_kestrel_serves()
+    {
+        var (app, address) = await TestHost.StartKestrelAsync(
+            configurePipeline: app =>
+            {
+                app.UseSecurityHeaders();
+                app.MapGet("/", () => "ok");
+            });
+
+        await using var running = app;
+        using var client = new HttpClient { BaseAddress = address };
+        using var response = await client.GetAsync("/");
+
+        Assert.True(response.IsSuccessStatusCode);
+        Assert.False(response.Headers.Contains("Server"));
+    }
+
+    [Fact]
+    public async Task Publishes_the_server_header_when_the_consumer_opts_out()
+    {
+        var (app, address) = await TestHost.StartKestrelAsync(
+            configurePipeline: app =>
+            {
+                app.UseSecurityHeaders(new SecurityHeadersOptions { SuppressServerHeader = false });
+                app.MapGet("/", () => "ok");
+            });
+
+        await using var running = app;
+        using var client = new HttpClient { BaseAddress = address };
+        using var response = await client.GetAsync("/");
+
+        Assert.Equal("Kestrel", response.Headers.GetValues("Server").Single());
+    }
 }

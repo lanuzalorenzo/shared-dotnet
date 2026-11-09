@@ -4,7 +4,7 @@
 
 Dos paquetes NuGet con los controles que repiten todas las APIs de este portfolio: cabeceras de seguridad, CORS cerrado por defecto, validación de tokens, límite por IP, ProblemDetails, HTTPS con HSTS y endpoint de salud. La lógica vive aquí una vez; cada API la instala y la fija por versión.
 
-> **Estado (2026-11-09).** Paquetes `0.1.0` publicados en GitHub Packages con los tags `security/v0.1.0` y `hosting/v0.1.0`. `EcommerceApi` los consume desde el feed con `packages: read` y los checks del pipeline en verde. `LL.Security` incorpora la política de contenido en `0.2.0` ([ADR 0004](docs/adr/0004-csp-en-el-paquete.md)); el tag `security/v0.2.0` está pendiente de publicar.
+> **Estado (2026-11-09).** `0.1.0` publicados con los tags `security/v0.1.0` y `hosting/v0.1.0`; `EcommerceApi` los consume desde el feed con `packages: read` y los checks del pipeline en verde. `LL.Security` `0.2.0` está publicado y añade la política de contenido ([ADR 0004](docs/adr/0004-csp-en-el-paquete.md)); `0.3.0` apaga la cabecera `Server` de Kestrel desde `UseSecurityHeaders` ([ADR 0005](docs/adr/0005-cabecera-server-en-el-paquete.md)) y se publica con el tag `security/v0.3.0`.
 
 Un control que vive en un documento depende de que cada equipo lo lea y lo copie bien. Uno que vive en un paquete se instala, se versiona y se audita una sola vez. Con un servicio la diferencia es pequeña; con veinte, es la diferencia entre revisar veinte copias a mano y revisar el original.
 
@@ -12,7 +12,7 @@ Un control que vive en un documento depende de que cada equipo lo lea y lo copie
 
 | Paquete | Qué aporta | Control que sustituye |
 |---|---|---|
-| `LL.Security` | Cabeceras de seguridad, política de contenido, CORS sin orígenes por defecto, JWT endurecido y límite por IP | OWASP API8 y API4 |
+| `LL.Security` | Cabeceras de seguridad con la `Server` de Kestrel apagada, política de contenido, CORS sin orígenes por defecto, JWT endurecido y límite por IP | OWASP API8 y API4 |
 | `LL.Hosting` | ProblemDetails, redirección a HTTPS con HSTS y salud anónima | Errores sin formato estable y sonda con token |
 
 El prefijo `LL` es el monograma —dos eles—, no una abreviatura suelta. El feed de GitHub Packages añade el propietario a la ruta, así que un identificador corto no queda expuesto a que otro publicador use el mismo.
@@ -49,7 +49,7 @@ app.UseAuthorization();
 app.MapApiHealthChecks();
 ```
 
-El orden importa: las cabeceras se aplican cuando la respuesta empieza a escribirse, así que también llegan a los 500 que genera el manejador de excepciones; el manejador va antes que el resto del pipeline de la aplicación.
+El orden importa: las cabeceras se aplican cuando la respuesta empieza a escribirse, así que también llegan a los 500 que genera el manejador de excepciones; el manejador va antes que el resto del pipeline de la aplicación. La misma llamada apaga `Server` en las opciones de Kestrel, que por defecto anuncian el servidor web; se desactiva con `SuppressServerHeader = false`, el apagado gana aunque se llame dos veces y no alcanza a IIS, nginx ni a un proxy delante.
 
 La política de contenido se compone por directivas y se escribe en la misma pasada:
 
