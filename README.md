@@ -4,7 +4,7 @@
 
 Dos paquetes NuGet con los controles que repiten todas las APIs de este portfolio: cabeceras de seguridad, CORS cerrado por defecto, validación de tokens, límite por IP, ProblemDetails, HTTPS con HSTS y endpoint de salud. La lógica vive aquí una vez; cada API la instala y la fija por versión.
 
-> **Estado (2026-11-06).** Paquetes `0.1.0` publicados en GitHub Packages con los tags `security/v0.1.0` y `hosting/v0.1.0`. `EcommerceApi` los consume desde el feed con `packages: read` y los checks del pipeline en verde.
+> **Estado (2026-11-09).** Paquetes `0.1.0` publicados en GitHub Packages con los tags `security/v0.1.0` y `hosting/v0.1.0`. `EcommerceApi` los consume desde el feed con `packages: read` y los checks del pipeline en verde. `LL.Security` incorpora la política de contenido en `0.2.0` ([ADR 0004](docs/adr/0004-csp-en-el-paquete.md)); el tag `security/v0.2.0` está pendiente de publicar.
 
 Un control que vive en un documento depende de que cada equipo lo lea y lo copie bien. Uno que vive en un paquete se instala, se versiona y se audita una sola vez. Con un servicio la diferencia es pequeña; con veinte, es la diferencia entre revisar veinte copias a mano y revisar el original.
 
@@ -12,7 +12,7 @@ Un control que vive en un documento depende de que cada equipo lo lea y lo copie
 
 | Paquete | Qué aporta | Control que sustituye |
 |---|---|---|
-| `LL.Security` | Cabeceras de seguridad, CORS sin orígenes por defecto, JWT endurecido y límite por IP | OWASP API8 y API4 |
+| `LL.Security` | Cabeceras de seguridad, política de contenido, CORS sin orígenes por defecto, JWT endurecido y límite por IP | OWASP API8 y API4 |
 | `LL.Hosting` | ProblemDetails, redirección a HTTPS con HSTS y salud anónima | Errores sin formato estable y sonda con token |
 
 El prefijo `LL` es el monograma —dos eles—, no una abreviatura suelta. El feed de GitHub Packages añade el propietario a la ruta, así que un identificador corto no queda expuesto a que otro publicador use el mismo.
@@ -35,7 +35,11 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-app.UseSecurityHeaders();
+app.UseSecurityHeaders(new SecurityHeadersOptions
+{
+    // Una API que solo devuelve datos no carga ni incrusta nada.
+    Csp = ContentSecurityPolicy.DenyAll(),
+});
 app.UseApiProblemDetails();
 app.UseApiTransportSecurity(app.Environment);
 app.UseCors("ApiCors");
@@ -46,6 +50,20 @@ app.MapApiHealthChecks();
 ```
 
 El orden importa: las cabeceras se aplican cuando la respuesta empieza a escribirse, así que también llegan a los 500 que genera el manejador de excepciones; el manejador va antes que el resto del pipeline de la aplicación.
+
+La política de contenido se compone por directivas y se escribe en la misma pasada:
+
+```csharp
+var options = new SecurityHeadersOptions
+{
+    Csp = new ContentSecurityPolicy()
+        .Add("default-src", "'self'")
+        .Add("img-src", "'self'", "https://cdn.example")
+        .Add("upgrade-insecure-requests"),
+};
+```
+
+`Add` valida el nombre y los valores, admite directivas sin valor y sustituye la directiva si ya existía; `ReportOnly` cambia la cabecera a la de informe y debe quedar fijado antes de registrar el middleware. El paquete no impone una política: la de una API JSON y la de una aplicación web no coinciden. `DenyAll()` es el atajo para la API. Si la respuesta ya trae la cabecera, se respeta; si `Headers` y la política la definen a la vez, el arranque falla en vez de elegir una en silencio.
 
 `AddHardenedJwtBearer` exige emisor y audiencia reales y falla al arrancar si faltan. Un servicio que arranca con marcadores y descubre el fallo en la primera petición autenticada es un servicio que ya está en producción mal configurado. La prueba del paquete cubre esa configuración; la validación efectiva de un token la ejerce el consumidor contra su emisor.
 
@@ -62,7 +80,7 @@ No entra nada con reglas de negocio ni acceso a datos. `EcommerceApi.Domain`, la
 
 - Cada paquete tiene su versión. No se publica el repositorio entero con un número.
 - Una versión publicada no se reescribe: un cambio incompatible sube el número mayor del paquete y deja nota de migración.
-- El consumidor fija un rango (`0.1.*` mientras no haya compromiso de estabilidad) y el pipeline sube la referencia.
+- El consumidor fija la versión exacta y la sube cuando publica una nueva: Dependabot propone el cambio y su CI lo valida. Un rango flotante esconde la actualización dentro del `restore` y deja el cambio sin revisar.
 
 El criterio completo está en [ADR 0002](docs/adr/0002-versioning-and-feed.md).
 
