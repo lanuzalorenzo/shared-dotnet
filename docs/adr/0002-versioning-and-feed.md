@@ -11,7 +11,7 @@ Un paquete NuGet no se comporta como un workflow: la versión que se publica que
 
 - **Versión por paquete.** El tag `security/v0.1.0` publica `LL.Security` y no toca `LL.Hosting`. El repositorio no tiene una versión única.
 - **Versiones inmutables.** Una versión publicada no se reescribe. Un cambio incompatible sube el número mayor del paquete afectado y deja nota de migración en el README.
-- **Consumo con rango.** Mientras no haya compromiso de estabilidad, el consumidor fija `0.1.*` y el pipeline sube la referencia cuando aparece una versión nueva.
+- **Consumo con versión exacta.** El consumidor fija la versión exacta del paquete y la sube cuando se publica una nueva; Dependabot propone el cambio y su CI lo valida. Un rango flotante aplica la actualización dentro del `restore`, sin PR y sin revisión. (Actualizado el 2026-11-09: antes recomendaba `0.1.*`.)
 - **Feed GitHub Packages.** El paquete se publica en el feed del propietario, con `GITHUB_TOKEN` y `packages: write`, solo en el job de publicación. No se guardan claves de NuGet en secretos.
 
 ## Consecuencias

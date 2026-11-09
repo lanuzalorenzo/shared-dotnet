@@ -19,6 +19,12 @@ public sealed class SecurityHeadersOptions
             ["Referrer-Policy"] = "no-referrer",
             ["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()",
         };
+
+    /// <summary>
+    /// Política de seguridad de contenido. Si no se define, no se escribe la
+    /// cabecera. No se admite a la vez que una CSP en <see cref="Headers"/>.
+    /// </summary>
+    public ContentSecurityPolicy? Csp { get; set; }
 }
 
 /// <summary>
@@ -38,6 +44,28 @@ public static class SecurityHeadersExtensions
         ArgumentNullException.ThrowIfNull(app);
 
         var headers = options ?? new SecurityHeadersOptions();
+        var policy = headers.Csp;
+        string? cspHeaderName = null;
+
+        if (policy is not null)
+        {
+            if (policy.IsEmpty)
+            {
+                throw new InvalidOperationException(
+                    "La política de contenido no tiene directivas. Define al menos una o no la registres.");
+            }
+
+            if (headers.Headers.ContainsKey("Content-Security-Policy")
+                || headers.Headers.ContainsKey("Content-Security-Policy-Report-Only"))
+            {
+                throw new InvalidOperationException(
+                    "La cabecera de política de contenido está en Headers y en Csp. Deja una sola fuente.");
+            }
+
+            cspHeaderName = policy.ReportOnly
+                ? "Content-Security-Policy-Report-Only"
+                : "Content-Security-Policy";
+        }
 
         return app.Use((context, next) =>
         {
@@ -46,6 +74,15 @@ public static class SecurityHeadersExtensions
                 foreach (var header in headers.Headers)
                 {
                     context.Response.Headers.TryAdd(header.Key, header.Value);
+                }
+
+                if (cspHeaderName is not null && policy is not null)
+                {
+                    context.Response.Headers.TryAdd(
+                        policy.ReportOnly
+                            ? "Content-Security-Policy-Report-Only"
+                            : "Content-Security-Policy",
+                        policy.ToHeaderValue());
                 }
 
                 return Task.CompletedTask;
