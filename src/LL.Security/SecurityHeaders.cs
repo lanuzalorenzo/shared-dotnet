@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace LL.Security;
 
@@ -25,6 +28,13 @@ public sealed class SecurityHeadersOptions
     /// cabecera. No se admite a la vez que una CSP en <see cref="Headers"/>.
     /// </summary>
     public ContentSecurityPolicy? Csp { get; set; }
+
+    /// <summary>
+    /// Apaga la cabecera <c>Server</c> de Kestrel, que por defecto anuncia el
+    /// servidor web. Activado por defecto; ponlo a <c>false</c> si el host
+    /// necesita publicarla. No afecta a hosts que no sean Kestrel.
+    /// </summary>
+    public bool SuppressServerHeader { get; set; } = true;
 }
 
 /// <summary>
@@ -36,6 +46,9 @@ public static class SecurityHeadersExtensions
     /// Añade las cabeceras configuradas a cada respuesta. Se registran para cuando
     /// la respuesta empieza a escribirse y no antes, porque el manejador de
     /// excepciones limpia las cabeceras al convertir un fallo en respuesta.
+    /// Además apaga la cabecera <c>Server</c> de Kestrel salvo que el consumidor
+    /// lo impida con <see cref="SecurityHeadersOptions.SuppressServerHeader"/>;
+    /// si el host no usa Kestrel, no hay nada que apagar.
     /// </summary>
     public static IApplicationBuilder UseSecurityHeaders(
         this IApplicationBuilder app,
@@ -44,6 +57,16 @@ public static class SecurityHeadersExtensions
         ArgumentNullException.ThrowIfNull(app);
 
         var headers = options ?? new SecurityHeadersOptions();
+
+        if (headers.SuppressServerHeader)
+        {
+            var kestrelOptions = app.ApplicationServices.GetService<IOptions<KestrelServerOptions>>();
+            if (kestrelOptions is not null)
+            {
+                kestrelOptions.Value.AddServerHeader = false;
+            }
+        }
+
         var policy = headers.Csp;
         string? cspHeaderName = null;
 
