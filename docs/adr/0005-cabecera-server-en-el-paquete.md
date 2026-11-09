@@ -28,5 +28,5 @@ Kestrel añade `Server: Kestrel` a todas las respuestas salvo que se apague. El 
 ## Consecuencias
 
 - `LL.Security` pasa a `0.3.0`; el consumidor sube la versión y borra su línea local. Un `ConfigureKestrel(o => o.AddServerHeader = true)` del consumidor queda pisado salvo que use `SuppressServerHeader = false`.
-- La prueba del paquete fija la opción, no la ausencia HTTP: `TestServer` no escribe la cabecera. La ausencia real se comprueba contra el contenedor en el pipeline del consumidor.
+- La prueba del paquete arranca Kestrel real en loopback y lee la respuesta: comprueba la ausencia de la cabecera y la opción de deshacerla. `TestServer` no sirve para eso porque nunca la escribe; el pipeline del consumidor la vuelve a comprobar contra su contenedor.
 - Solo cubre Kestrel. Un nginx, un proxy o una plataforma delante pueden añadir su propia cabecera y este control no los ve.
