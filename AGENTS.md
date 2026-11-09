@@ -6,7 +6,7 @@ Paquetes NuGet con los controles que comparten las APIs del portfolio. Este repo
 
 - `src/LL.Security/`: cabeceras, CORS, JWT y límite por IP.
 - `src/LL.Hosting/`: ProblemDetails, transporte y salud.
-- `tests/`: una prueba por contrato, con `WebApplication` y `TestServer`. Cada proyecto de pruebas prueba su paquete, no el consumidor.
+- `tests/`: una prueba por contrato, con `WebApplication` y `TestServer`; las que dependen de una cabecera que escribe el servidor arrancan Kestrel real. Cada proyecto de pruebas prueba su paquete, no el consumidor.
 - `docs/adr/`: decisiones estructurales. Toda decisión de este tipo se escribe antes de cambiar el código.
 - `assets/iconos/`: icono del README, con su especificación.
 
