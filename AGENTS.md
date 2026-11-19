@@ -20,6 +20,7 @@ Paquetes NuGet con los controles que comparten las APIs del portfolio. Este repo
 - Las comprobaciones de seguridad no se relajan para que una prueba pase. Si una prueba no puede ejercer el comportamiento, se cambia la prueba.
 - El identificador del paquete es `LL.<Capacidad>` y el espacio de nombres coincide. No se crean paquetes de conveniencia que envuelvan una línea.
 - `Directory.Packages.props` es la única fuente de versiones de dependencias.
+- La versión de .NET, las actualizaciones mayores y las dependencias directas y transitivas siguen la [política de plataforma](https://github.com/lanuzalorenzo/core/blob/main/docs/versiones-y-dependencias.md): LTS, mayores de la familia bloqueados y pin de transitivas en el centro.
 
 ## Verificación
 
