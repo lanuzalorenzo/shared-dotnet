@@ -16,6 +16,16 @@ jobs:
     with:
       solution: SharedDotnet.sln
 
+  platform:
+    name: Versión de plataforma
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v7
+
+      - name: Comprobar la versión de plataforma
+        uses: lanuzalorenzo/core/actions/check-platform@v1.8
+
   secret-scanning:
     name: Detección de secretos (historial completo)
     runs-on: ubuntu-latest
