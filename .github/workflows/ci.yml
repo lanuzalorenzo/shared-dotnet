@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    uses: lanuzalorenzo/core/.github/workflows/dotnet.yml@v1.3
+    uses: lanuzalorenzo/core/.github/workflows/dotnet.yml@v1.6
     with:
       solution: SharedDotnet.sln
 
@@ -26,4 +26,4 @@ jobs:
           fetch-depth: 0
 
       - name: Escanear secretos con Gitleaks
-        uses: lanuzalorenzo/core/actions/gitleaks@v1.4
+        uses: lanuzalorenzo/core/actions/gitleaks@v1.6
