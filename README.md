@@ -8,6 +8,10 @@ Dos paquetes NuGet con los controles que repiten todas las APIs de este portfoli
 
 Un control que vive en un documento depende de que cada equipo lo lea y lo copie bien. Uno que vive en un paquete se instala, se versiona y se audita una sola vez. Con un servicio la diferencia es pequeña; con veinte, es la diferencia entre revisar veinte copias a mano y revisar el original.
 
+## Línea base
+
+Qué debe tener toda aplicación del portfolio, dónde vive cada control, cómo se monta y cómo se prueba: [`docs/linea-base.md`](docs/linea-base.md). Cada aplicación declara su estado en su `AGENTS.md` §Línea base.
+
 ## Paquetes
 
 | Paquete | Qué aporta | Control que sustituye |
