@@ -11,6 +11,8 @@ namespace LL.Security;
 /// </summary>
 public sealed class HardenedJwtBearerOptions
 {
+    internal static readonly TimeSpan DefaultClockSkew = TimeSpan.FromMinutes(2);
+
     /// <summary>URL absoluta del emisor, por ejemplo la del tenant de Entra ID.</summary>
     public string Authority { get; set; } = string.Empty;
 
@@ -18,7 +20,7 @@ public sealed class HardenedJwtBearerOptions
     public string Audience { get; set; } = string.Empty;
 
     /// <summary>Margen de reloj tolerado al validar la vigencia.</summary>
-    public TimeSpan ClockSkew { get; set; } = TimeSpan.FromMinutes(2);
+    public TimeSpan ClockSkew { get; set; } = DefaultClockSkew;
 }
 
 public static class JwtBearerExtensions
@@ -38,42 +40,85 @@ public static class JwtBearerExtensions
         var options = new HardenedJwtBearerOptions();
         configure(options);
 
-        if (!Uri.TryCreate(options.Authority, UriKind.Absolute, out _))
+        return AddBearer(services, options.Authority, options.Audience, options.ClockSkew, signingKey: null);
+    }
+
+    /// <summary>
+    /// Monta el mismo esquema con la misma validación, pero con la clave del
+    /// emisor local en vez de la autoridad del tenant. El emisor no se descubre
+    /// por red y la clave solo existe en el proceso que la creó: es una puerta
+    /// explícita para pruebas y desarrollo, no un interruptor del registro real.
+    /// </summary>
+    public static AuthenticationBuilder AddLocalJwtBearer(
+        this IServiceCollection services,
+        LocalJwtIssuer issuer)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(issuer);
+
+        return AddBearer(services, issuer.Issuer, issuer.Audience, HardenedJwtBearerOptions.DefaultClockSkew, issuer.SigningKey);
+    }
+
+    private static AuthenticationBuilder AddBearer(
+        IServiceCollection services,
+        string issuer,
+        string audience,
+        TimeSpan clockSkew,
+        SecurityKey? signingKey)
+    {
+        if (!Uri.TryCreate(issuer, UriKind.Absolute, out _))
         {
             throw new ArgumentException(
-                "Authority debe ser una URL absoluta del emisor.",
-                nameof(configure));
+                "El emisor debe ser una URL absoluta.",
+                nameof(issuer));
         }
 
-        if (string.IsNullOrWhiteSpace(options.Audience))
+        if (string.IsNullOrWhiteSpace(audience))
         {
-            throw new ArgumentException("Audience no puede estar vacío.", nameof(configure));
+            throw new ArgumentException("Audience no puede estar vacío.", nameof(audience));
         }
 
-        if (options.ClockSkew < TimeSpan.Zero)
+        if (clockSkew < TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(configure),
-                options.ClockSkew,
+                nameof(clockSkew),
+                clockSkew,
                 "ClockSkew no puede ser negativo.");
+        }
+
+        var validation = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = issuer,
+            ValidateAudience = true,
+            ValidAudience = audience,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ClockSkew = clockSkew,
+        };
+
+        if (signingKey is not null)
+        {
+            validation.IssuerSigningKey = signingKey;
         }
 
         return services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(jwt =>
             {
-                jwt.Authority = options.Authority;
-                jwt.Audience = options.Audience;
-                jwt.TokenValidationParameters = new TokenValidationParameters
+                if (signingKey is null)
                 {
-                    ValidateIssuer = true,
-                    ValidIssuer = options.Authority,
-                    ValidateAudience = true,
-                    ValidAudience = options.Audience,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ClockSkew = options.ClockSkew,
-                };
+                    jwt.Authority = issuer;
+                    jwt.Audience = audience;
+                }
+                else
+                {
+                    jwt.Authority = null;
+                    jwt.MetadataAddress = string.Empty;
+                    jwt.Audience = null;
+                }
+
+                jwt.TokenValidationParameters = validation;
             });
     }
 }
