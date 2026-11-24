@@ -22,6 +22,7 @@ Paquetes NuGet con los controles que comparten las APIs del portfolio. Este repo
 - **Línea base:** este repositorio publica controles; no declara `## Línea base` porque no es una aplicación. Qué debe tener una aplicación está en `docs/linea-base.md`.
 - El identificador del paquete es `LL.<Capacidad>` y el espacio de nombres coincide. No se crean paquetes de conveniencia que envuelvan una línea.
 - `Directory.Packages.props` es la única fuente de versiones de dependencias.
+- La versión de .NET, las actualizaciones mayores y las dependencias directas y transitivas siguen la [política de plataforma](https://github.com/lanuzalorenzo/core/blob/main/docs/versiones-y-dependencias.md): LTS, mayores de la familia bloqueados y pin de transitivas en el centro.
 
 ## Verificación
 
