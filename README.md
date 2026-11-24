@@ -4,7 +4,7 @@
 
 Dos paquetes NuGet con los controles que repiten todas las APIs de este portfolio: cabeceras de seguridad, CORS cerrado por defecto, validación de tokens, límite por IP, ProblemDetails, HTTPS con HSTS y endpoint de salud. La lógica vive aquí una vez; cada API la instala y la fija por versión.
 
-> **Estado (2026-11-09).** `0.1.0` publicados con los tags `security/v0.1.0` y `hosting/v0.1.0`; `EcommerceApi` los consume desde el feed con `packages: read` y los checks del pipeline en verde. `LL.Security` `0.2.0` está publicado y añade la política de contenido ([ADR 0004](docs/adr/0004-csp-en-el-paquete.md)); `0.3.0` apaga la cabecera `Server` de Kestrel desde `UseSecurityHeaders` ([ADR 0005](docs/adr/0005-cabecera-server-en-el-paquete.md)) y se publica con el tag `security/v0.3.0`.
+> **Estado (2026-11-09).** `0.1.0` publicados con los tags `security/v0.1.0` y `hosting/v0.1.0`; `EcommerceApi` los consume desde el feed con `packages: read` y los checks del pipeline en verde. `LL.Security` `0.2.0` está publicado y añade la política de contenido ([ADR 0004](docs/adr/0004-csp-en-el-paquete.md)); `0.3.0` apaga la cabecera `Server` de Kestrel desde `UseSecurityHeaders` ([ADR 0005](docs/adr/0005-cabecera-server-en-el-paquete.md)) y se publica con el tag `security/v0.3.0`. La política por permiso y el emisor local de prueba llegan en `0.4.0` ([ADR 0006](docs/adr/0006-permisos-por-politica-y-emisor-local.md)), pendiente de publicación con el tag `security/v0.4.0`.
 
 Un control que vive en un documento depende de que cada equipo lo lea y lo copie bien. Uno que vive en un paquete se instala, se versiona y se audita una sola vez. Con un servicio la diferencia es pequeña; con veinte, es la diferencia entre revisar veinte copias a mano y revisar el original.
 
@@ -16,7 +16,7 @@ Qué debe tener toda aplicación del portfolio, dónde vive cada control, cómo 
 
 | Paquete | Qué aporta | Control que sustituye |
 |---|---|---|
-| `LL.Security` | Cabeceras de seguridad con la `Server` de Kestrel apagada, política de contenido, CORS sin orígenes por defecto, JWT endurecido y límite por IP | OWASP API8 y API4 |
+| `LL.Security` | Cabeceras de seguridad con la `Server` de Kestrel apagada, política de contenido, CORS sin orígenes por defecto, JWT endurecido, política por permiso y límite por IP | OWASP API8, API4 y API5 |
 | `LL.Hosting` | ProblemDetails, redirección a HTTPS con HSTS y salud anónima | Errores sin formato estable y sonda con token |
 
 El prefijo `LL` es el monograma —dos eles—, no una abreviatura suelta. El feed de GitHub Packages añade el propietario a la ruta, así que un identificador corto no queda expuesto a que otro publicador use el mismo.
@@ -35,7 +35,7 @@ builder.Services.AddHardenedJwtBearer(options =>
 builder.Services.AddRemoteIpRateLimiting();
 builder.Services.AddApiProblemDetails();
 builder.Services.AddApiHealthChecks();
-builder.Services.AddAuthorization();
+builder.Services.AddPermissionPolicies();
 
 var app = builder.Build();
 
@@ -51,6 +51,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapApiHealthChecks();
+app.MapGroup("/orders").RequirePermission("orders.read");
 ```
 
 El orden importa: las cabeceras se aplican cuando la respuesta empieza a escribirse, así que también llegan a los 500 que genera el manejador de excepciones; el manejador va antes que el resto del pipeline de la aplicación. La misma llamada apaga `Server` en las opciones de Kestrel, que por defecto anuncian el servidor web; se desactiva con `SuppressServerHeader = false`, el apagado gana aunque se llame dos veces y no alcanza a IIS, nginx ni a un proxy delante.
@@ -70,6 +71,10 @@ var options = new SecurityHeadersOptions
 `Add` valida el nombre y los valores, admite directivas sin valor y sustituye la directiva si ya existía; `ReportOnly` cambia la cabecera a la de informe y debe quedar fijado antes de registrar el middleware. El paquete no impone una política: la de una API JSON y la de una aplicación web no coinciden. `DenyAll()` es el atajo para la API. Si la respuesta ya trae la cabecera, se respeta; si `Headers` y la política la definen a la vez, el arranque falla en vez de elegir una en silencio.
 
 `AddHardenedJwtBearer` exige emisor y audiencia reales y falla al arrancar si faltan. Un servicio que arranca con marcadores y descubre el fallo en la primera petición autenticada es un servicio que ya está en producción mal configurado. La prueba del paquete cubre esa configuración; la validación efectiva de un token la ejerce el consumidor contra su emisor.
+
+`AddPermissionPolicies` registra un proveedor que sirve una política por permiso: `RequirePermission("orders.read")` exige `permission:orders.read` y responde 401 sin token y 403 con un token válido sin ese permiso. No hay lista de permisos que mantener, y una errata en el endpoint deniega en vez de abrir. El prefijo `permission:` queda reservado: una política con ese nombre es un error explícito. El registro sustituye al proveedor de políticas y no se combina con otro propio, pero las políticas que el consumidor declare en `AuthorizationOptions` se siguen resolviendo. El claim es una opción: `permissions` por defecto y, con roles de Entra ID y el mapeo de claims activo, `ClaimTypes.Role`.
+
+Para pruebas y desarrollo local, `AddLocalJwtBearer` monta el mismo esquema con los mismos parámetros de validación, pero contra un `LocalJwtIssuer` en memoria: sin autoridad remota, con una clave aleatoria por instancia y cinco minutos de vigencia por token. `CreateTokenWithPermissions(["orders.read"])` produce el token que la prueba necesita; la clase no sustituye a la validación del tenant, que se sigue probando en el consumidor.
 
 ## Criterio: qué entra y qué no
 

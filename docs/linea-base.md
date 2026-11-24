@@ -19,7 +19,7 @@ Las opciones de la plantilla deciden qué se crea. Nunca hay una opción de ejec
 | Id | Control | Dónde vive | Cómo se monta | Cómo se prueba |
 |---|---|---|---|---|
 | `auth` | Token de Entra ID | `LL.Security` | `AddHardenedJwtBearer` con emisor y audiencia obligatorios; sin valores, el arranque falla | 401 sin token; 401 con emisor, audiencia, clave o vigencia ajenos |
-| `permisos` | Permiso por rol | consumidor, sobre la identidad de `LL.Security` | una política por permiso; el helper `RequirePermission` está pendiente en el paquete | 403 con token válido y sin el permiso |
+| `permisos` | Permiso por rol | `LL.Security` | `AddPermissionPolicies` y, en el endpoint, `RequirePermission("orders.read")`; el claim es una opción, `permissions` por defecto | 403 con token válido y sin el permiso; 200 con el permiso |
 | `cors` | CORS | `LL.Security` | extensión con denegación por defecto; el consumidor declara sus orígenes | origen no permitido rechazado |
 | `cabeceras` | Cabeceras de seguridad | `LL.Security` en API; `nginx.conf` en web | extensión del host, o configuración del servidor | cabeceras presentes y `Server` ausente |
 | `csp` | Política de contenido | `LL.Security` | extensión con la política declarada | cabecera presente y sin `unsafe-inline` |
@@ -49,8 +49,8 @@ Las opciones de la plantilla deciden qué se crea. Nunca hay una opción de ejec
 
 1. Registro de aplicación en Entra ID con un rol por permiso.
 2. Interfaz de usuario, MSAL en el cliente; servicio a servicio, credenciales de cliente o identidad administrada.
-3. En la API, `AddHardenedJwtBearer` y una política por rol. Sin valores, no arranca.
-4. En local, `dotnet user-jwts` o un emisor de prueba: mismo `JwtBearer`, misma validación, solo cambia el emisor.
+3. En la API, `AddHardenedJwtBearer` y `AddPermissionPolicies`, con un permiso por rol. Sin valores, no arranca.
+4. En local, `dotnet user-jwts` o `AddLocalJwtBearer` con un `LocalJwtIssuer`: mismo `JwtBearer`, misma validación, solo cambia el emisor.
 5. Pruebas de contrato mínimas: 401 sin token; 401 con emisor, audiencia, clave o vigencia ajenos; 403 con el token correcto y sin el permiso; 200 con el permiso; `/health` anónimo.
 
 El modelo está probado en [comicteca](https://github.com/lanuzalorenzo/comicteca) —API y web con Entra ID, con diez pruebas de contrato según su tabla de capacidades— y en [lab-api-local-azure](https://github.com/lanuzalorenzo/lab-api-local-azure), que valida tokens reales de un tenant.
