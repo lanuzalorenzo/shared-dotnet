@@ -8,6 +8,7 @@ Paquetes NuGet con los controles que comparten las APIs del portfolio. Este repo
 - `src/LL.Hosting/`: ProblemDetails, transporte y salud.
 - `tests/`: una prueba por contrato, con `WebApplication` y `TestServer`; las que dependen de una cabecera que escribe el servidor arrancan Kestrel real. Cada proyecto de pruebas prueba su paquete, no el consumidor.
 - `docs/adr/`: decisiones estructurales. Toda decisión de este tipo se escribe antes de cambiar el código.
+- `docs/linea-base.md`: qué debe tener toda aplicación, con cada control, su dueño, cómo se monta y cómo se prueba.
 - `assets/iconos/`: icono del README, con su especificación.
 
 ## Reglas
@@ -18,6 +19,7 @@ Paquetes NuGet con los controles que comparten las APIs del portfolio. Este repo
 - Sin configuración de un consumidor concreto dentro de un paquete: todo entra por opciones y se valida en el registro.
 - Un control nuevo entra con su prueba. Un paquete que no puede probar lo que promete no se publica.
 - Las comprobaciones de seguridad no se relajan para que una prueba pase. Si una prueba no puede ejercer el comportamiento, se cambia la prueba.
+- **Línea base:** este repositorio publica controles; no declara `## Línea base` porque no es una aplicación. Qué debe tener una aplicación está en `docs/linea-base.md`.
 - El identificador del paquete es `LL.<Capacidad>` y el espacio de nombres coincide. No se crean paquetes de conveniencia que envuelvan una línea.
 - `Directory.Packages.props` es la única fuente de versiones de dependencias.
 
