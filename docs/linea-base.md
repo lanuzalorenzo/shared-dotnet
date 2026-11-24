@@ -2,7 +2,7 @@
 
 Una aplicación del portfolio se entrega como una casa con las puertas puestas: los controles no dependen de que alguien se acuerde de montarlos, sino de que vienen con el esqueleto. Este documento dice cuáles son, quién los mantiene y cómo se comprueba que están.
 
-> **Estado:** Runbook preparado (2026-11-24). Los controles que cita existen y se prueban por separado; la comprobación conjunta, `check-linea-base`, está pendiente.
+> **Estado:** Runbook preparado (2026-11-24). Cada control existe en el repositorio que lo mantiene; los de los paquetes tienen prueba propia y los de configuración se comprueban en su repositorio. La comprobación conjunta, `check-linea-base`, está pendiente. La política por permiso y el emisor local llegan con `LL.Security` 0.4.0, pendiente de publicar.
 >
 > **Para quién es:** para quien crea una aplicación y para quien revisa una existente.
 >
@@ -19,17 +19,17 @@ Las opciones de la plantilla deciden qué se crea. Nunca hay una opción de ejec
 | Id | Control | Dónde vive | Cómo se monta | Cómo se prueba |
 |---|---|---|---|---|
 | `auth` | Token de Entra ID | `LL.Security` | `AddHardenedJwtBearer` con emisor y audiencia obligatorios; sin valores, el arranque falla | 401 sin token; 401 con emisor, audiencia, clave o vigencia ajenos |
-| `permisos` | Permiso por rol | `LL.Security` | `AddPermissionPolicies` y, en el endpoint, `RequirePermission("orders.read")`; el claim es una opción, `permissions` por defecto | 403 con token válido y sin el permiso; 200 con el permiso |
-| `cors` | CORS | `LL.Security` | extensión con denegación por defecto; el consumidor declara sus orígenes | origen no permitido rechazado |
-| `cabeceras` | Cabeceras de seguridad | `LL.Security` en API; `nginx.conf` en web | extensión del host, o configuración del servidor | cabeceras presentes y `Server` ausente |
-| `csp` | Política de contenido | `LL.Security` | extensión con la política declarada | cabecera presente y sin `unsafe-inline` |
-| `limite` | Límite de peticiones | `LL.Security` | extensión con umbral y ventana; particiona por IP y por identidad solo si el consumidor pasa `PartitionKey` | peticiones por encima del umbral rechazadas |
-| `problemdetails` | Errores con formato estable | `LL.Hosting` | extensión del host | error con `application/problem+json` |
-| `salud` | Sonda | `LL.Hosting` | `MapApiHealthChecks`, patrón `/health` por defecto y parametrizable | `/health` anónimo y sin detalle de dependencias |
+| `permisos` | Permiso por rol | `LL.Security` | `AddPermissionPolicies` y, en el endpoint, `RequirePermission("orders.read")`; `UseAuthentication` y `UseAuthorization` en el pipeline; el claim es una opción: `permissions` por defecto y `ClaimTypes.Role` con roles de Entra ID y el mapeo de claims por defecto | 403 con token válido y sin el permiso; 200 con el permiso |
+| `cors` | CORS | `LL.Security` | `AddDenyByDefaultCors` con la sección de orígenes y `UseCors` con el nombre de la política; sin lista, ningún origen pasa | origen no permitido rechazado |
+| `cabeceras` | Cabeceras de seguridad | `LL.Security` en API; `nginx.conf` en web | `UseSecurityHeaders` en la API, o la configuración del servidor en la web | cabeceras presentes y `Server` ausente |
+| `csp` | Política de contenido | `LL.Security` | `SecurityHeadersOptions.Csp` con una `ContentSecurityPolicy` | cabecera presente y sin `unsafe-inline` |
+| `limite` | Límite de peticiones | `LL.Security` | `AddRemoteIpRateLimiting` con umbral y ventana, y `UseRateLimiter()`; particiona por IP salvo que el consumidor cambie `PartitionKey` | peticiones por encima del umbral rechazadas |
+| `problemdetails` | Errores con formato estable | `LL.Hosting` | `AddApiProblemDetails` y `UseApiProblemDetails` | error con `application/problem+json` |
+| `salud` | Sonda | `LL.Hosting` | `AddApiHealthChecks` y `MapApiHealthChecks`, patrón `/health` por defecto y parametrizable | `/health` anónimo y sin detalle de dependencias |
 | `permisos-workflow` | Permisos mínimos del CI | workflow del repositorio | `permissions:` explícito y mínimo por trabajo | sin `write-all`; `sast` con `security-events: write` |
 | `secretos` | Secretos fuera del repo | convención, hook y CI | llavero del sistema o identidad administrada; `appsettings.Local.json` ignorado en la plantilla | Gitleaks sobre el historial y revisión del lote |
-| `sast` | Análisis estático | [`core/actions/sast@v1.8`](https://github.com/lanuzalorenzo/core/tree/main/actions/sast) | paso del workflow | sin hallazgos altos |
-| `sca` | Dependencias e imagen | [`core/actions/scan@v1.8`](https://github.com/lanuzalorenzo/core/tree/main/actions/scan) | paso del workflow | Trivy sin vulnerabilidades altas |
+| `sast` | Análisis estático | [`core/actions/sast@v1.8`](https://github.com/lanuzalorenzo/core/tree/v1.8/actions/sast) | paso del workflow | sin hallazgos altos |
+| `sca` | Dependencias e imagen | [`core/actions/scan@v1.8`](https://github.com/lanuzalorenzo/core/tree/v1.8/actions/scan) | paso del workflow | Trivy sin vulnerabilidades altas |
 | `contenedor` | Contenedor sin privilegios | plantilla `ll-api` o `ll-blazor` de [`plantillas-dotnet`](https://github.com/lanuzalorenzo/plantillas-dotnet) | Dockerfile generado | la imagen no corre como root |
 | `dependabot` | Actualizaciones | plantilla de `plantillas-dotnet` | configuración generada | auto-merge de parche y menor con el pipeline en verde |
 | `main` | Rama protegida | repositorio | rama y pull request, checks obligatorios | no hay push directo; merge solo con checks |
@@ -49,8 +49,8 @@ Las opciones de la plantilla deciden qué se crea. Nunca hay una opción de ejec
 
 1. Registro de aplicación en Entra ID con un rol por permiso.
 2. Interfaz de usuario, MSAL en el cliente; servicio a servicio, credenciales de cliente o identidad administrada.
-3. En la API, `AddHardenedJwtBearer` y `AddPermissionPolicies`, con un permiso por rol. Sin valores, no arranca.
-4. En local, `dotnet user-jwts` o `AddLocalJwtBearer` con un `LocalJwtIssuer`: mismo `JwtBearer`, misma validación, solo cambia el emisor.
+3. En la API, `AddHardenedJwtBearer`, `AddPermissionPolicies` y `UseAuthentication`/`UseAuthorization` en el pipeline, con un permiso por rol. Sin valores, no arranca.
+4. En local, `dotnet user-jwts` para prueba manual, o `AddLocalJwtBearer` con un `LocalJwtIssuer` para las pruebas de contrato: mismo `JwtBearer`, sin autoridad remota y con una clave simétrica en memoria.
 5. Pruebas de contrato mínimas: 401 sin token; 401 con emisor, audiencia, clave o vigencia ajenos; 403 con el token correcto y sin el permiso; 200 con el permiso; `/health` anónimo.
 
 El modelo está probado en [comicteca](https://github.com/lanuzalorenzo/comicteca) —API y web con Entra ID, con diez pruebas de contrato según su tabla de capacidades— y en [lab-api-local-azure](https://github.com/lanuzalorenzo/lab-api-local-azure), que valida tokens reales de un tenant.
