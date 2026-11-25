@@ -1,6 +1,6 @@
 # 0005 — La cabecera `Server` se apaga desde `LL.Security`
 
-- Estado: aceptado
+- **Estado:** Aceptada
 - Fecha: 2026-11-09
 
 ## Contexto

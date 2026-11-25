@@ -2,9 +2,9 @@
 
 # Controles compartidos para APIs ASP.NET Core
 
-Dos paquetes NuGet con los controles que repiten todas las APIs de este portfolio: cabeceras de seguridad, CORS cerrado por defecto, validación de tokens, límite por IP, ProblemDetails, HTTPS con HSTS y endpoint de salud. La lógica vive aquí una vez; cada API la instala y la fija por versión.
+Tres paquetes NuGet con los controles que repiten todas las APIs de este portfolio: cabeceras de seguridad, CORS cerrado por defecto, validación de tokens, límite por IP, ProblemDetails, HTTPS con HSTS, endpoint de salud y el cliente del contrato de la cola de eventos. La lógica vive aquí una vez; cada API la instala y la fija por versión.
 
-> **Estado (2026-11-09).** `0.1.0` publicados con los tags `security/v0.1.0` y `hosting/v0.1.0`; `EcommerceApi` los consume desde el feed con `packages: read` y los checks del pipeline en verde. `LL.Security` `0.2.0` está publicado y añade la política de contenido ([ADR 0004](docs/adr/0004-csp-en-el-paquete.md)); `0.3.0` apaga la cabecera `Server` de Kestrel desde `UseSecurityHeaders` ([ADR 0005](docs/adr/0005-cabecera-server-en-el-paquete.md)) y se publica con el tag `security/v0.3.0`. La política por permiso y el emisor local de prueba llegan en `0.4.0` ([ADR 0006](docs/adr/0006-permisos-por-politica-y-emisor-local.md)), pendiente de publicación con el tag `security/v0.4.0`.
+> **Estado (2026-11-25).** `0.1.0` publicados con los tags `security/v0.1.0` y `hosting/v0.1.0`; `EcommerceApi` los consume desde el feed con `packages: read` y los checks del pipeline en verde. `LL.Security` `0.2.0` está publicado y añade la política de contenido ([ADR 0004](docs/adr/0004-csp-en-el-paquete.md)); `0.3.0` apaga la cabecera `Server` de Kestrel desde `UseSecurityHeaders` ([ADR 0005](docs/adr/0005-cabecera-server-en-el-paquete.md)) y se publica con el tag `security/v0.3.0`. La política por permiso y el emisor local de prueba llegan en `0.4.0` ([ADR 0006](docs/adr/0006-permisos-por-politica-y-emisor-local.md)), pendiente de publicación con el tag `security/v0.4.0`. `LL.Eventos.Client` `0.1.0` queda pendiente de publicación con el tag `eventos/v0.1.0` ([ADR 0007](docs/adr/0007-cliente-de-eventos.md)).
 
 Un control que vive en un documento depende de que cada equipo lo lea y lo copie bien. Uno que vive en un paquete se instala, se versiona y se audita una sola vez. Con un servicio la diferencia es pequeña; con veinte, es la diferencia entre revisar veinte copias a mano y revisar el original.
 
@@ -18,12 +18,32 @@ Qué debe tener toda aplicación del portfolio, dónde vive cada control, cómo 
 |---|---|---|
 | `LL.Security` | Cabeceras de seguridad con la `Server` de Kestrel apagada, política de contenido, CORS sin orígenes por defecto, JWT endurecido, política por permiso y límite por IP | OWASP API8, API4 y API5 |
 | `LL.Hosting` | ProblemDetails, redirección a HTTPS con HSTS y salud anónima | Errores sin formato estable y sonda con token |
+| `LL.Eventos.Client` | Publicar, reclamar, ack y nack sobre el contrato v1, con identificador ULID como clave de idempotencia y reintento de la publicación | Un cliente HTTP distinto en cada consumidor de la cola |
 
 El prefijo `LL` es el monograma —dos eles—, no una abreviatura suelta. El feed de GitHub Packages añade el propietario a la ruta, así que un identificador corto no queda expuesto a que otro publicador use el mismo.
 
 Cada uno lleva sus propias pruebas: el paquete no se apoya en las del consumidor.
 
 ## Cómo se usa
+
+### `LL.Eventos.Client`
+
+```csharp
+var http = new HttpClient { BaseAddress = new Uri("https://eventos.example/") };
+var cliente = new EventosClient(http, new EventosClientOptions { Reintentos = 2 });
+
+var evento = await cliente.PublishAsync("pedido.creado", new { pedido = 42 });
+var siguiente = await cliente.ClaimAsync("pedido.creado");
+
+if (siguiente is not null)
+{
+    await cliente.AckAsync(siguiente.Id, hashDelCommit, siguiente.Intentos);
+}
+```
+
+La publicación sin identificador genera un ULID; con identificador, repetirla es idempotente. El cliente exige un `HttpClient` con `BaseAddress` y no registra el transporte por su cuenta.
+
+### `LL.Security` y `LL.Hosting`
 
 ```csharp
 builder.Services.AddDenyByDefaultCors(builder.Configuration);
