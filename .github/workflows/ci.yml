@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    uses: lanuzalorenzo/core/.github/workflows/dotnet.yml@v1.6
+    uses: lanuzalorenzo/core/.github/workflows/dotnet.yml@v1.9
     with:
       solution: SharedDotnet.sln
 
@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Comprobar la versión de plataforma
-        uses: lanuzalorenzo/core/actions/check-platform@v1.8
+        uses: lanuzalorenzo/core/actions/check-platform@v1.9
 
   secret-scanning:
     name: Detección de secretos (historial completo)
@@ -36,4 +36,4 @@ jobs:
           fetch-depth: 0
 
       - name: Escanear secretos con Gitleaks
-        uses: lanuzalorenzo/core/actions/gitleaks@v1.6
+        uses: lanuzalorenzo/core/actions/gitleaks@v1.9
