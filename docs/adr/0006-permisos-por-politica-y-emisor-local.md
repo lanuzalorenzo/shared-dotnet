@@ -1,6 +1,6 @@
 # 0006 — Políticas por permiso y emisor local de prueba en `LL.Security`
 
-- Estado: aceptado
+- **Estado:** Aceptada
 - Fecha: 2026-11-24
 
 ## Contexto
