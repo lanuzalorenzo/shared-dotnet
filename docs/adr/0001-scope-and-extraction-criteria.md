@@ -1,6 +1,6 @@
 # 0001 — Alcance: qué se extrae y qué se queda en la aplicación
 
-- Estado: aceptado
+- **Estado:** Aceptada
 - Fecha: 2026-11-05
 
 ## Contexto

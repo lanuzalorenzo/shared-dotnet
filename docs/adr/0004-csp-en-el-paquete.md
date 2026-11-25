@@ -1,6 +1,6 @@
 # 0004 — La política de contenido entra en `LL.Security`
 
-- Estado: aceptado
+- **Estado:** Aceptada
 - Fecha: 2026-11-09
 
 ## Contexto

@@ -5,6 +5,7 @@ on:
     tags:
       - "security/v*"
       - "hosting/v*"
+      - "eventos/v*"
 
 permissions:
   contents: read
@@ -36,6 +37,7 @@ jobs:
           case "$package" in
             security) project="src/LL.Security/LL.Security.csproj" ;;
             hosting)  project="src/LL.Hosting/LL.Hosting.csproj" ;;
+            eventos)  project="src/LL.Eventos.Client/LL.Eventos.Client.csproj" ;;
             *) echo "Paquete desconocido en el tag: $package"; exit 1 ;;
           esac
           echo "project=$project" >> "$GITHUB_OUTPUT"

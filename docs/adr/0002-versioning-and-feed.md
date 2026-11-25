@@ -1,6 +1,6 @@
 # 0002 — Versionado por paquete y feed de publicación
 
-- Estado: aceptado
+- **Estado:** Aceptada
 - Fecha: 2026-11-05
 
 ## Contexto

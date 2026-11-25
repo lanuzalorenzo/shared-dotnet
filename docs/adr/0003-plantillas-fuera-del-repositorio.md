@@ -1,6 +1,6 @@
 # 0003 — Las plantillas no viven aquí
 
-- Estado: aceptado
+- **Estado:** Aceptada
 - Fecha: 2026-11-06
 
 ## Contexto

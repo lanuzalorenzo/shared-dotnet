@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>LL.Eventos.Client</PackageId>
+    <Description>Cliente del contrato v1 de la cola de eventos: publicar, reclamar, ack y nack, con identificador ULID como clave de idempotencia, reintentos en la publicación y la carga serializada tal cual llega.</Description>
+    <PackageTags>eventos;cola;cliente;http;idempotencia</PackageTags>
+  </PropertyGroup>
+
+</Project>
