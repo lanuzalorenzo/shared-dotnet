@@ -28,8 +28,8 @@ Las opciones de la plantilla deciden qué se crea. Nunca hay una opción de ejec
 | `salud` | Sonda | `LL.Hosting` | `AddApiHealthChecks` y `MapApiHealthChecks`, patrón `/health` por defecto y parametrizable | `/health` anónimo y sin detalle de dependencias |
 | `permisos-workflow` | Permisos mínimos del CI | workflow del repositorio | `permissions:` explícito y mínimo por trabajo | sin `write-all`; `sast` con `security-events: write` |
 | `secretos` | Secretos fuera del repo | convención, hook y CI | llavero del sistema o identidad administrada; `appsettings.Local.json` ignorado en la plantilla | Gitleaks sobre el historial y revisión del lote |
-| `sast` | Análisis estático | [`core/actions/sast@v1.8`](https://github.com/lanuzalorenzo/core/tree/v1.8/actions/sast) | paso del workflow | sin hallazgos altos |
-| `sca` | Dependencias e imagen | [`core/actions/scan@v1.8`](https://github.com/lanuzalorenzo/core/tree/v1.8/actions/scan) | paso del workflow | Trivy sin vulnerabilidades altas |
+| `sast` | Análisis estático | [`core/actions/sast@v1.9`](https://github.com/lanuzalorenzo/core/tree/v1.9/actions/sast) | paso del workflow | sin hallazgos altos |
+| `sca` | Dependencias e imagen | [`core/actions/scan@v1.9`](https://github.com/lanuzalorenzo/core/tree/v1.9/actions/scan) | paso del workflow | Trivy sin vulnerabilidades altas |
 | `contenedor` | Contenedor sin privilegios | plantilla `ll-api` o `ll-blazor` de [`plantillas-dotnet`](https://github.com/lanuzalorenzo/plantillas-dotnet) | Dockerfile generado | la imagen no corre como root |
 | `dependabot` | Actualizaciones | plantilla de `plantillas-dotnet` | configuración generada | auto-merge de parche y menor con el pipeline en verde |
 | `main` | Rama protegida | repositorio | rama y pull request, checks obligatorios | no hay push directo; merge solo con checks |
