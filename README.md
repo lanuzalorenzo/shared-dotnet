@@ -19,7 +19,7 @@ Qué debe tener toda aplicación del portfolio, dónde vive cada control, cómo 
 | `LL.Security` | Cabeceras de seguridad con la `Server` de Kestrel apagada, política de contenido, CORS sin orígenes por defecto, JWT endurecido, política por permiso y límite por IP | OWASP API8, API4 y API5 |
 | `LL.Hosting` | ProblemDetails, redirección a HTTPS con HSTS y salud anónima | Errores sin formato estable y sonda con token |
 | `LL.Eventos.Client` | Publicar, reclamar, ack y nack sobre el contrato v1, con identificador ULID como clave de idempotencia y reintento de la publicación | Un cliente HTTP distinto en cada consumidor de la cola |
-| `LL.Eventos.Worker` | Bucle de consumo con concurrencia acotada, ack con el hash del commit, nack con motivo, apagado que devuelve el lease y sonda de atasco | Un bucle copiado en cada consumidor, con leases vencidos o entregas retenidas al apagar |
+| `LL.Eventos.Worker` (pendiente de publicación) | Bucle de consumo con concurrencia acotada, ack con el hash del commit, nack con motivo, apagado que devuelve el lease y sonda de atasco | Un bucle copiado en cada consumidor, con leases vencidos o entregas retenidas al apagar |
 
 El prefijo `LL` es el monograma —dos eles—, no una abreviatura suelta. El feed de GitHub Packages añade el propietario a la ruta, así que un identificador corto no queda expuesto a que otro publicador use el mismo.
 
@@ -43,6 +43,8 @@ if (siguiente is not null)
 ```
 
 La publicación sin identificador genera un ULID; con identificador, repetirla es idempotente. El cliente exige un `HttpClient` con `BaseAddress` y no registra el transporte por su cuenta.
+
+El `0.1.0` publicado no lee los nombres `snake_case` de la respuesta: las fechas y el lease llegan vacíos. La corrección va en `0.1.1`, pendiente de publicación; hasta entonces, no interpretes `PublicadoEn` ni `LeaseHasta` del paquete instalado.
 
 ### `LL.Eventos.Worker`
 
@@ -165,8 +167,9 @@ dotnet restore SharedDotnet.sln
 dotnet build SharedDotnet.sln -c Release --no-restore
 dotnet test SharedDotnet.sln -c Release --no-build --no-restore
 dotnet format SharedDotnet.sln --verify-no-changes --no-restore
+gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-El CI reutiliza el workflow `dotnet.yml` de `lanuzalorenzo/core`, que ejecuta esos mismos pasos. Un cambio está listo cuando el pipeline pasa en verde.
+El CI reutiliza el workflow `dotnet.yml` de `lanuzalorenzo/core` para la compilación, el formato y las pruebas, y escanea el historial completo con Gitleaks. Un cambio está listo cuando el pipeline pasa en verde.
 
 Licencia: MIT.
