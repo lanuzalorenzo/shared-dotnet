@@ -7,6 +7,7 @@ on:
       - "hosting/v*"
       - "eventos/v*"
       - "worker/v*"
+      - "observabilidad/v*"
 
 permissions:
   contents: read
@@ -41,6 +42,7 @@ jobs:
             eventos)  project="src/LL.Eventos.Client/LL.Eventos.Client.csproj" ;;
             # El worker arrastra al cliente: su tag fija también la versión de la dependencia.
             worker)   project="src/LL.Eventos.Worker/LL.Eventos.Worker.csproj" ;;
+            observabilidad) project="src/LL.Observabilidad/LL.Observabilidad.csproj" ;;
             *) echo "Paquete desconocido en el tag: $package"; exit 1 ;;
           esac
           echo "project=$project" >> "$GITHUB_OUTPUT"
