@@ -2,9 +2,9 @@
 
 # Controles compartidos para APIs ASP.NET Core
 
-Cuatro paquetes NuGet con los controles que repiten todas las APIs de este portfolio: cabeceras de seguridad, CORS cerrado por defecto, validación de tokens, límite por IP, ProblemDetails, HTTPS con HSTS, endpoint de salud, el cliente del contrato de la cola de eventos y el bucle que la consume. La lógica vive aquí una vez; cada API la instala y la fija por versión.
+Cinco paquetes NuGet con los controles que repiten todas las APIs de este portfolio: cabeceras de seguridad, CORS cerrado por defecto, validación de tokens, límite por IP, ProblemDetails, HTTPS con HSTS, endpoint de salud, el cliente del contrato de la cola de eventos, el bucle que la consume y la observabilidad de ese recorrido. La lógica vive aquí una vez; cada API la instala y la fija por versión.
 
-> **Estado (2026-11-26).** `0.1.0` publicados con los tags `security/v0.1.0` y `hosting/v0.1.0`; `EcommerceApi` los consume desde el feed con `packages: read` y los checks del pipeline en verde. `LL.Security` `0.2.0` está publicado y añade la política de contenido ([ADR 0004](docs/adr/0004-csp-en-el-paquete.md)); `0.3.0` apaga la cabecera `Server` de Kestrel desde `UseSecurityHeaders` ([ADR 0005](docs/adr/0005-cabecera-server-en-el-paquete.md)) y se publica con el tag `security/v0.3.0`. La política por permiso y el emisor local de prueba llegan en `0.4.0` ([ADR 0006](docs/adr/0006-permisos-por-politica-y-emisor-local.md)), pendiente de publicación con el tag `security/v0.4.0`. `LL.Eventos.Client` `0.1.0` está publicado con el tag `eventos/v0.1.0` ([ADR 0007](docs/adr/0007-cliente-de-eventos.md)). `LL.Eventos.Worker` queda escrito y probado en el repositorio ([ADR 0008](docs/adr/0008-worker-de-consumo.md)), pendiente de publicación: primero `LL.Eventos.Client` `0.1.1`, que lee los nombres `snake_case` del contrato, y después `worker/v0.1.1`, que arrastra esa versión.
+> **Estado (2026-11-26).** `0.1.0` publicados con los tags `security/v0.1.0` y `hosting/v0.1.0`; `EcommerceApi` los consume desde el feed con `packages: read` y los checks del pipeline en verde. `LL.Security` `0.2.0` está publicado y añade la política de contenido ([ADR 0004](docs/adr/0004-csp-en-el-paquete.md)); `0.3.0` apaga la cabecera `Server` de Kestrel desde `UseSecurityHeaders` ([ADR 0005](docs/adr/0005-cabecera-server-en-el-paquete.md)) y se publica con el tag `security/v0.3.0`. La política por permiso y el emisor local de prueba llegan en `0.4.0` ([ADR 0006](docs/adr/0006-permisos-por-politica-y-emisor-local.md)), pendiente de publicación con el tag `security/v0.4.0`. `LL.Eventos.Client` `0.1.0` está publicado con el tag `eventos/v0.1.0` ([ADR 0007](docs/adr/0007-cliente-de-eventos.md)). `LL.Eventos.Worker` queda escrito y probado en el repositorio ([ADR 0008](docs/adr/0008-worker-de-consumo.md)), pendiente de publicación: primero `LL.Eventos.Client` `0.1.1`, que lee los nombres `snake_case` del contrato, y después `worker/v0.1.1`, que arrastra esa versión. `LL.Observabilidad` queda escrito y probado en el repositorio ([ADR 0009](docs/adr/0009-observabilidad-compartida.md)), pendiente de publicación con el tag `observabilidad/v0.1.0`.
 
 Un control que vive en un documento depende de que cada equipo lo lea y lo copie bien. Uno que vive en un paquete se instala, se versiona y se audita una sola vez. Con un servicio la diferencia es pequeña; con veinte, es la diferencia entre revisar veinte copias a mano y revisar el original.
 
@@ -20,6 +20,7 @@ Qué debe tener toda aplicación del portfolio, dónde vive cada control, cómo 
 | `LL.Hosting` | ProblemDetails, redirección a HTTPS con HSTS y salud anónima | Errores sin formato estable y sonda con token |
 | `LL.Eventos.Client` | Publicar, reclamar, ack y nack sobre el contrato v1, con identificador ULID como clave de idempotencia y reintento de la publicación | Un cliente HTTP distinto en cada consumidor de la cola |
 | `LL.Eventos.Worker` (pendiente de publicación) | Bucle de consumo con concurrencia acotada, ack con el hash del commit, nack con motivo, apagado que devuelve el lease y sonda de atasco | Un bucle copiado en cada consumidor, con leases vencidos o entregas retenidas al apagar |
+| `LL.Observabilidad` (pendiente de publicación) | Fuente única de trazas y métricas con los nombres de la cola, correlación por `evento.id`, tramos hijos opcionales del recorrido, propagación W3C entre publicar y ack y registro que no copia la carga | Nombres de telemetría y líneas de registro distintos en cada consumidor |
 
 El prefijo `LL` es el monograma —dos eles—, no una abreviatura suelta. El feed de GitHub Packages añade el propietario a la ruta, así que un identificador corto no queda expuesto a que otro publicador use el mismo.
 
@@ -67,6 +68,25 @@ public sealed class MiManejador : IEventosHandler
 ```
 
 El worker reclama una entrega por conversación y cierra con `AckAsync(id, hash, evento.Intentos)`; si el manejador falla, devuelve el motivo con `NackAsync`. El manejador se resuelve en un alcance por entrega, así que puede depender de servicios con ámbito. Al apagarse deja de reclamar, espera `TiempoDeApagado` a lo empezado y devuelve con nack lo que no terminó, para no retener el lease hasta que venza. `SondaDeCola.Estado` dice si una entrega lleva abierta más que su lease; una cola vacía no es un atasco.
+
+### `LL.Observabilidad`
+
+```csharp
+builder.Services.AddLogging();
+builder.Services.AddObservabilidad();
+
+using var publicacion = telemetria.Publicar(id, tipo);
+var sobre = publicacion is null ? null : Propagacion.Capturar(publicacion, id);
+
+if (sobre is not null)
+{
+    using var acuse = telemetria.Continuar(Nombres.Ack, sobre);
+    using var aplicar = telemetria.Aplicar(sobre.EventoId);
+    telemetria.Aplicados.Add(1);
+}
+```
+
+La fuente y el medidor se llaman `EventosApi`; los contadores son `eventos.publicados`, `eventos.reclamados`, `eventos.aplicados`, `eventos.fallidos` y `eventos.muertos`, y las actividades llevan `evento.id`. Los tramos opcionales `evento.aplicar`, `evento.exportar`, `evento.comprobar` y `evento.commitear` cuelgan de la entrega. `RegistroDeEventos` escribe el identificador, el tipo y el intento, nunca la carga ni el mensaje de la excepción. El registro de logs y el exportador son del consumidor; el paquete solo declara los instrumentos. El detalle, los límites y el estado están en el [README del paquete](src/LL.Observabilidad/README.md).
 
 ### `LL.Security` y `LL.Hosting`
 

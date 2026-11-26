@@ -8,6 +8,7 @@ Paquetes NuGet con los controles que comparten las APIs del portfolio. Este repo
 - `src/LL.Hosting/`: ProblemDetails, transporte y salud.
 - `src/LL.Eventos.Client/`: cliente del contrato v1 de la cola de eventos.
 - `src/LL.Eventos.Worker/`: bucle de consumo del contrato v1, con concurrencia acotada, apagado que devuelve el lease y sonda de atasco.
+- `src/LL.Observabilidad/`: nombres de trazas y métricas, correlación por `evento.id`, propagación W3C entre publicar y ack y registro que no copia la carga.
 - `tests/`: una prueba por contrato. Los controles de servidor usan `WebApplication` y `TestServer`, y arrancan Kestrel real cuando la cabecera la escribe el servidor; los clientes HTTP usan un `HttpMessageHandler` doble. Cada proyecto de pruebas prueba su paquete, no el consumidor.
 - `docs/adr/`: decisiones estructurales. Toda decisión de este tipo se escribe antes de cambiar el código.
 - `docs/linea-base.md`: qué debe tener toda aplicación, con cada control, su dueño, cómo se monta y cómo se prueba.
@@ -40,13 +41,13 @@ El CI llama al workflow `dotnet.yml` de `lanuzalorenzo/core` y escanea secretos 
 
 ## Versionado y publicación
 
-- Un tag `security/vX.Y.Z`, `hosting/vX.Y.Z`, `eventos/vX.Y.Z` o `worker/vX.Y.Z` publica un solo paquete. No hay versión de repositorio.
+- Un tag `security/vX.Y.Z`, `hosting/vX.Y.Z`, `eventos/vX.Y.Z`, `worker/vX.Y.Z` u `observabilidad/vX.Y.Z` publica un solo paquete. No hay versión de repositorio.
 - Una versión publicada no se borra ni se reescribe. Un cambio incompatible sube el mayor y deja nota de migración.
 - La publicación usa `GITHUB_TOKEN` con `packages: write`, solo en ese job. No se guardan claves de NuGet en secretos.
 - Antes de publicar la primera versión, comprobar que el número es el que se quiere: en un feed público no se puede retirar del todo.
 
 ## Commits
 
-Formato: `type(scope): imperative summary in English`. Tipos: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`. Scopes: `security`, `hosting`, `eventos`, `worker`, `ci`, `docs`, `repo`.
+Formato: `type(scope): imperative summary in English`. Tipos: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`. Scopes: `security`, `hosting`, `eventos`, `worker`, `observabilidad`, `ci`, `docs`, `repo`.
 
 Los cambios entran por rama y pull request. El commit inicial se hizo sobre `main` porque el repositorio aún no tenía ramas; es la única excepción y no se repite.
