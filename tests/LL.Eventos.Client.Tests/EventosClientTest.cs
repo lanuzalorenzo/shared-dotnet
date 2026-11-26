@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text.Json;
 
@@ -10,10 +11,10 @@ public sealed class EventosClientTest
           "id": "evt_01J9Z6Q3Y8W4T6P2M0K5N7R1CD",
           "tipo": "pedido.creado",
           "carga": { "pedido": 42 },
-          "publicadoEn": "2026-11-25T10:00:00+00:00",
+          "publicado_en": "2026-11-25T10:00:00+00:00",
           "estado": "pendiente",
           "intentos": 0,
-          "leaseHasta": null,
+          "lease_hasta": null,
           "resultado": null
         }
         """;
@@ -54,6 +55,37 @@ public sealed class EventosClientTest
         Assert.Equal("evt_01J9Z6Q3Y8W4T6P2M0K5N7R1CD", evento.Id);
         Assert.Equal("pedido.creado", evento.Tipo);
         Assert.Equal("pendiente", evento.Estado);
+        Assert.Equal(42, evento.Carga.GetProperty("pedido").GetInt32());
+        Assert.Equal(
+            DateTimeOffset.Parse("2026-11-25T10:00:00+00:00", CultureInfo.InvariantCulture),
+            evento.PublicadoEn);
+        Assert.Null(evento.LeaseHasta);
+    }
+
+    [Fact]
+    public async Task Claim_reads_the_snake_case_fields_of_the_contract()
+    {
+        var (cliente, doble) = Crear();
+        doble.Encolar(HttpStatusCode.OK, """
+            {
+              "id": "evt_01J9Z6Q3Y8W4T6P2M0K5N7R1CD",
+              "tipo": "pedido.creado",
+              "carga": { "pedido": 42 },
+              "publicado_en": "2026-11-25T10:00:00+00:00",
+              "estado": "reclamado",
+              "intentos": 1,
+              "lease_hasta": "2026-11-25T10:05:00+00:00",
+              "resultado": null
+            }
+            """);
+
+        var evento = await cliente.ClaimAsync("pedido.creado");
+
+        Assert.NotNull(evento);
+        Assert.Equal(1, evento.Intentos);
+        Assert.Equal(
+            DateTimeOffset.Parse("2026-11-25T10:05:00+00:00", CultureInfo.InvariantCulture),
+            evento.LeaseHasta);
     }
 
     [Fact]
@@ -68,6 +100,20 @@ public sealed class EventosClientTest
 
         Assert.Equal(2, doble.Peticiones.Count);
         Assert.All(doble.Peticiones, peticion => Assert.Contains($"\"id\":\"{id}\"", peticion.Cuerpo));
+    }
+
+    [Fact]
+    public async Task Publish_keeps_the_payload_conventions_of_the_consumer()
+    {
+        var (cliente, doble) = Crear();
+        doble.Encolar(HttpStatusCode.Created, UnEvento);
+
+        await cliente.PublishAsync("pedido.creado", new CargaDePrueba(7));
+
+        using var enviado = JsonDocument.Parse(Assert.Single(doble.Peticiones).Cuerpo);
+        var carga = enviado.RootElement.GetProperty("carga");
+        Assert.Equal(7, carga.GetProperty("pedidoId").GetInt32());
+        Assert.False(carga.TryGetProperty("pedido_id", out _));
     }
 
     [Fact]
@@ -206,6 +252,8 @@ public sealed class EventosClientTest
         Assert.Equal("dependencia caída", enviado.RootElement.GetProperty("motivo").GetString());
         Assert.Equal(2, enviado.RootElement.GetProperty("intentos").GetInt32());
     }
+
+    private sealed record CargaDePrueba(int PedidoId);
 }
 
 public sealed class EventoIdTest

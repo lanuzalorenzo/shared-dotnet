@@ -14,7 +14,17 @@ namespace LL.Eventos.Client;
 /// </summary>
 public sealed class EventosClient
 {
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
+    {
+        // El contrato v1 usa snake_case en el sobre y en las respuestas; con Web
+        // a secas, `publicado_en` y `lease_hasta` se leen como valores por defecto.
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+    };
+
+    // La carga es opaca: se serializa con las convenciones del consumidor
+    // —Web, camelCase— y no con los nombres del sobre. El contrato la envía
+    // tal como llega.
+    private static readonly JsonSerializerOptions Carga = new(JsonSerializerDefaults.Web);
 
     private readonly HttpClient _http;
     private readonly EventosClientOptions _opciones;
@@ -67,14 +77,14 @@ public sealed class EventosClient
         return await LeerEventoAsync(respuesta, cancelacion);
     }
 
-    /// <summary>Publica un objeto serializado con las convenciones del contrato.</summary>
+    /// <summary>Publica un objeto serializado con las convenciones del consumidor.</summary>
     public Task<Evento> PublishAsync<T>(
         string tipo,
         T carga,
         string? id = null,
         CancellationToken cancelacion = default)
     {
-        return PublishAsync(tipo, JsonSerializer.SerializeToElement(carga, Json), id, cancelacion);
+        return PublishAsync(tipo, JsonSerializer.SerializeToElement(carga, Carga), id, cancelacion);
     }
 
     /// <summary>Reclama el siguiente evento, opcionalmente de un tipo. Nulo si no hay.</summary>
