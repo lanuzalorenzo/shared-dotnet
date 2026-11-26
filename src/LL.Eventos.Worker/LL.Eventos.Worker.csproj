@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>LL.Eventos.Worker</PackageId>
+    <Description>Bucle de consumo del contrato v1 de la cola de eventos: concurrencia acotada, ack con el hash del commit, nack con motivo, apagado ordenado que devuelve el lease y sonda de atasco.</Description>
+    <PackageTags>eventos;cola;worker;background-service;lease</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../LL.Eventos.Client/LL.Eventos.Client.csproj" />
+  </ItemGroup>
+
+</Project>
